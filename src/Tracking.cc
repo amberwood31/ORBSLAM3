@@ -1837,6 +1837,7 @@ void Tracking::Track()
 
                 if (mState == RECENTLY_LOST)
                 {
+                    std::cout << "----RECENTLY LOST----" << std::endl;
                     Verbose::PrintMess("Lost for a short time", Verbose::VERBOSITY_NORMAL);
 
                     bOK = true;
@@ -1994,8 +1995,21 @@ void Tracking::Track()
                 bOK = TrackLocalMap();
         }
 
-        if(bOK)
+        if(bOK){
             mState = OK;
+
+            int counter = 0;
+			for(size_t i=0; i < mCurrentFrame.mvpMapPoints.size();i++)
+			{
+				if (mCurrentFrame.mvpMapPoints[i]){
+					if (! mCurrentFrame.mvbOutlier[i])
+						counter ++;
+				}
+			}
+			std::cout << "num of mvpMapPoints tracked: " << counter << std::endl;
+
+
+        }
         else if (mState == OK)
         {
             if (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO)
@@ -2334,11 +2348,16 @@ void Tracking::MonocularInitialization()
         // Check if there are enough correspondences
         if(nmatches<100)
         {
+            std::cout << "State: not enough correspondences. Back to FirstInitialization " << std::endl;
+
             delete mpInitializer;
             mpInitializer = static_cast<Initializer*>(NULL);
             fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
             return;
         }
+
+        std::cout << "matches: " << nmatches << std::endl;
+
 
         cv::Mat Rcw; // Current Camera Rotation
         cv::Mat tcw; // Current Camera Translation
@@ -2346,6 +2365,9 @@ void Tracking::MonocularInitialization()
 
         if(mpCamera->ReconstructWithTwoViews(mInitialFrame.mvKeysUn,mCurrentFrame.mvKeysUn,mvIniMatches,Rcw,tcw,mvIniP3D,vbTriangulated))
         {
+
+            std::cout << "initialized R: " << std::endl << Rcw << std::endl;
+            std::cout << "initialized T: " << std::endl << tcw << std::endl;
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
             {
                 if(mvIniMatches[i]>=0 && !vbTriangulated[i])
@@ -2364,6 +2386,9 @@ void Tracking::MonocularInitialization()
 
             CreateInitialMapMonocular();
 
+        }
+        else{
+            std::cout << "State: Can't initialize from first two frames" << std::endl;
         }
     }
 }
@@ -2571,8 +2596,11 @@ void Tracking::CheckReplacedInLastFrame()
 
 bool Tracking::TrackReferenceKeyFrame()
 {
+    std::cout << "--------TrackReferenceKFrame----------" << std::endl;
+
     // Compute Bag of Words vector
     mCurrentFrame.ComputeBoW();
+
 
     // We perform first an ORB matching with the reference keyframe
     // If enough matches are found we setup a PnP solver
@@ -2586,6 +2614,8 @@ bool Tracking::TrackReferenceKeyFrame()
         cout << "TRACK_REF_KF: Less than 15 matches!!\n";
         return false;
     }
+    std::cout << "TrackReferenceKF matches: " <<  nmatches << std::endl;
+
 
     mCurrentFrame.mvpMapPoints = vpMapPointMatches;
     mCurrentFrame.SetPose(mLastFrame.mTcw);
@@ -2718,6 +2748,9 @@ bool Tracking::TrackWithMotionModel()
         mCurrentFrame.SetPose(mVelocity*mLastFrame.mTcw);
     }
 
+    std::cout << "--------TrackWithMotionModel----------" << std::endl;
+
+    std::cout << "trackWithMotionModel mVelocity: " << mVelocity << std::endl;
 
     fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
 
@@ -2794,6 +2827,7 @@ bool Tracking::TrackWithMotionModel()
 
 bool Tracking::TrackLocalMap()
 {
+    std::cout << "--------TrackLocalMap----------" << std::endl;
 
     // We have an estimation of the camera pose and some map points tracked in the frame.
     // We retrieve the local map and try to find matches to points in the local map.
@@ -3072,6 +3106,7 @@ bool Tracking::NeedNewKeyFrame()
 
 void Tracking::CreateNewKeyFrame()
 {
+    std::cout << "Creating new KFrame" << std::endl;
     if(mpLocalMapper->IsInitializing())
         return;
 
@@ -3471,14 +3506,22 @@ bool Tracking::Relocalization()
     // Compute Bag of Words Vector
     mCurrentFrame.ComputeBoW();
 
+    vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mCurrentFrame.mDescriptors);
+	std::cout << "currentFrame Descriptor size: " << vCurrentDesc.size() << std::endl;
+
+    std::cout << "currentFrame BOW vector size" << mCurrentFrame.mBowVec.size() << std::endl;
+
+
     // Relocalization is performed when tracking is lost
     // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame, mpAtlas->GetCurrentMap());
+
 
     if(vpCandidateKFs.empty()) {
         Verbose::PrintMess("There are not candidates", Verbose::VERBOSITY_NORMAL);
         return false;
     }
+    std::cout << "founr relocalization candidates: " << vpCandidateKFs.size() << std::endl;
 
     const int nKFs = vpCandidateKFs.size();
 

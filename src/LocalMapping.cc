@@ -250,7 +250,7 @@ void LocalMapping::Run()
             vdKFCulling_ms.push_back(timeKFCulling_ms);
 #endif
 
-
+            std::cout << "Inserting into LoopCloser, KFrame mnID: " << mpCurrentKeyFrame->mnId << std::endl;
             mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
 
 

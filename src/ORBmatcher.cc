@@ -716,6 +716,9 @@ int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f
     vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);
     vector<int> vnMatches21(F2.mvKeysUn.size(),-1);
 
+    std::cout <<"Initialize - num of candidate Matches (features on Frame0): " << vbPrevMatched.size() << std::endl;
+
+
     for(size_t i1=0, iend1=F1.mvKeysUn.size(); i1<iend1; i1++)
     {
         cv::KeyPoint kp1 = F1.mvKeysUn[i1];
@@ -1259,6 +1262,10 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
             rotHist[i].reserve(500);
 
         const float factor = 1.0f/HISTO_LENGTH;
+
+        std::cout << "check KF1 vpMapPoints size:  " << pKF1->GetNumberMPs() << std::endl;
+        std::cout << "check KF1 vFeatVec size: " << vFeatVec1.size() << std::endl;
+
 
         DBoW2::FeatureVector::const_iterator f1it = vFeatVec1.begin();
         DBoW2::FeatureVector::const_iterator f2it = vFeatVec2.begin();

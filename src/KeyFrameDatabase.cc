@@ -737,10 +737,14 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F, Map
     // Search all keyframes that share a word with current frame
     {
         unique_lock<mutex> lock(mMutex);
+        std::cout << "current frame BOW vector size: " << F->mBowVec.size() << std::endl;
+        std::cout << "mvInvertedFile size: " << mvInvertedFile.size() << std::endl;
+
 
         for(DBoW2::BowVector::const_iterator vit=F->mBowVec.begin(), vend=F->mBowVec.end(); vit != vend; vit++)
         {
             list<KeyFrame*> &lKFs =   mvInvertedFile[vit->first];
+            // std::cout << "n of lKFs: " << lKFs.size() << std::endl;
 
             for(list<KeyFrame*>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++)
             {
